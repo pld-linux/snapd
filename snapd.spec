@@ -21,9 +21,7 @@ BuildRequires:	systemd
 BuildRequires:	tar >= 1:1.22
 BuildRequires:	xz
 Requires:	snap-confine = %{version}-%{release}
-Requires:	squashfs-tools
-# we need squashfs.ko loaded
-Requires:	kmod(squashfs.ko)
+Requires:	squashfs
 ExclusiveArch:	%{ix86} %{x8664} %{arm} aarch64 ppc64le s390x
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
