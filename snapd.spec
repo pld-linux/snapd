@@ -1,6 +1,7 @@
 #
 # Conditional build:
 %bcond_with	tests		# build with tests
+%bcond_with	selinux		# selinux
 
 Summary:	A transactional software package manager
 Name:		snapd
@@ -25,8 +26,6 @@ Requires:	squashfs-tools
 Requires:	kmod(squashfs.ko)
 # bash-completion owns /usr/share/bash-completion/completions
 Requires:	bash-completion
-# Force the SELinux module to be installed
-Requires:	%{name}-selinux = %{version}-%{release}
 ExclusiveArch:	%{ix86} %{x8664} %{arm} aarch64 ppc64le s390x
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
@@ -106,10 +105,11 @@ export GOPATH=$(pwd):$(pwd)/Godeps/_workspace:%{gopath}
 %gobuild -o bin/snapd %{import_path}/cmd/snapd
 %gobuild -o bin/snap-update-ns %{import_path}/cmd/snap-update-ns
 
-# Build SELinux module
+%if %{with selinux}
 cd data/selinux
 %{__make} SHARE="%{_datadir}" TARGETS="snappy"
 cd -
+%endif
 
 # Build snap-confine
 cd cmd
@@ -161,8 +161,6 @@ install -d -p $RPM_BUILD_ROOT%{_sharedstatedir}/snapd/seccomp/profiles
 install -d -p $RPM_BUILD_ROOT%{_sharedstatedir}/snapd/snaps
 install -d -p $RPM_BUILD_ROOT%{_sharedstatedir}/snapd/snap/bin
 install -d -p $RPM_BUILD_ROOT%{_localstatedir}/snap
-install -d -p $RPM_BUILD_ROOT%{_datadir}/selinux/devel/include/contrib
-install -d -p $RPM_BUILD_ROOT%{_datadir}/selinux/packages
 
 # Install snap and snapd
 install -p bin/snap $RPM_BUILD_ROOT%{_bindir}
@@ -171,9 +169,12 @@ install -p bin/snapctl $RPM_BUILD_ROOT%{_bindir}/snapctl
 install -p bin/snapd $RPM_BUILD_ROOT%{_libexecdir}/snapd
 install -p bin/snap-update-ns $RPM_BUILD_ROOT%{_libexecdir}/snapd
 
-# Install SELinux module
+%if %{with selinux}
+install -d -p $RPM_BUILD_ROOT%{_datadir}/selinux/devel/include/contrib
+install -d -p $RPM_BUILD_ROOT%{_datadir}/selinux/packages
 install -p data/selinux/snappy.if $RPM_BUILD_ROOT%{_datadir}/selinux/devel/include/contrib
 install -p data/selinux/snappy.pp.bz2 $RPM_BUILD_ROOT%{_datadir}/selinux/packages
+%endif
 
 # Install snap(1) man page
 bin/snap help --man > $RPM_BUILD_ROOT%{_mandir}/man1/snap.1
@@ -319,9 +320,11 @@ fi
 %{_udevrulesdir}/80-snappy-assign.rules
 %attr(0000,root,root) %{_sharedstatedir}/snapd/void
 
+%if %{with selinux}
 %files selinux
 %defattr(644,root,root,755)
 %doc data/selinux/COPYING
 %doc data/selinux/README.md
 %{_datadir}/selinux/packages/snappy.pp.bz2
 %{_datadir}/selinux/devel/include/contrib/snappy.if
+%endif
