@@ -24,8 +24,6 @@ Requires:	snap-confine = %{version}-%{release}
 Requires:	squashfs-tools
 # we need squashfs.ko loaded
 Requires:	kmod(squashfs.ko)
-# bash-completion owns /usr/share/bash-completion/completions
-Requires:	bash-completion
 ExclusiveArch:	%{ix86} %{x8664} %{arm} aarch64 ppc64le s390x
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
@@ -83,6 +81,18 @@ Requires(post):	libselinux-utils
 %description selinux
 This package provides the SELinux policy module to ensure snapd runs
 properly under an environment with SELinux enabled.
+
+%package -n bash-completion-%{name}
+Summary:	bash-completion for %{name}
+Group:		Applications/Shells
+Requires:	%{name} = %{version}-%{release}
+Requires:	bash-completion
+%if "%{_rpmversion}" >= "5"
+BuildArch:	noarch
+%endif
+
+%description -n bash-completion-%{name}
+bash-completion for %{name}.
 
 %prep
 %setup -q
@@ -279,7 +289,6 @@ fi
 %{_libexecdir}/snapd/info
 %{_libexecdir}/snapd/snap-mgmt
 %{_mandir}/man1/snap.1*
-%{bash_compdir}/snap
 /etc/profile.d/snapd.sh
 %{systemdunitdir}/snapd.socket
 %{systemdunitdir}/snapd.service
@@ -326,3 +335,7 @@ fi
 %{_datadir}/selinux/packages/snappy.pp.bz2
 %{_datadir}/selinux/devel/include/contrib/snappy.if
 %endif
+
+%files -n bash-completion-%{name}
+%defattr(644,root,root,755)
+%{bash_compdir}/snap
