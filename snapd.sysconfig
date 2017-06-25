@@ -1,0 +1,2 @@
+# Disable re-exec by default
+SNAP_REEXEC=0

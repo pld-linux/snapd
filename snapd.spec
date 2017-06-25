@@ -13,6 +13,8 @@ Source0:	https://github.com/snapcore/snapd/releases/download/%{version}/%{name}_
 # Source0-md5:	8152560d2af809ad84185d3b341b2f13
 # Script to implement certain package management actions
 Source1:	snap-mgmt.sh
+Source2:	profile.d.sh
+Source3:	%{name}.sysconfig
 URL:		https://github.com/snapcore/snapd
 Patch0001:	0001-cmd-use-libtool-for-the-internal-library.patch
 Patch0100:	%{name}-2.26.1-interfaces-seccomp-allow-bind-for-Fedora.patch
@@ -158,7 +160,7 @@ install -d -p $RPM_BUILD_ROOT%{_bindir}
 install -d -p $RPM_BUILD_ROOT%{_libexecdir}/snapd
 install -d -p $RPM_BUILD_ROOT%{_mandir}/man1
 install -d -p $RPM_BUILD_ROOT%{systemdunitdir}
-install -d -p $RPM_BUILD_ROOT%{_sysconfdir}/profile.d
+install -d -p $RPM_BUILD_ROOT/etc/profile.d
 install -d -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
 install -d -p $RPM_BUILD_ROOT%{_sharedstatedir}/snapd/assertions
 install -d -p $RPM_BUILD_ROOT%{_sharedstatedir}/snapd/desktop/applications
@@ -213,20 +215,8 @@ cd data/systemd
 rm -fv $RPM_BUILD_ROOT%{systemdunitdir}/snapd.system-shutdown.service
 cd -
 
-# Put /var/lib/snapd/snap/bin on PATH
-# Put /var/lib/snapd/desktop on XDG_DATA_DIRS
-cat << __SNAPD_SH__ > $RPM_BUILD_ROOT%{_sysconfdir}/profile.d/snapd.sh
-PATH=\$PATH:/var/lib/snapd/snap/bin
-if [ -z "\$XDG_DATA_DIRS" ]; then
-XDG_DATA_DIRS=%{_datadir}/:%{_prefix}/local/share/:/var/lib/snapd/desktop
-else
-    XDG_DATA_DIRS="\$XDG_DATA_DIRS":/var/lib/snapd/desktop
-fi
-export XDG_DATA_DIRS
-__SNAPD_SH__
-
-# Disable re-exec by default
-echo 'SNAP_REEXEC=0' > $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/snapd
+cp -p %{SOURCE2} $RPM_BUILD_ROOT/etc/profile.d/snapd.sh
+cp -p %{SOURCE3} $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/snapd
 
 # Install snap management script
 install -pm 0755 %{SOURCE1} $RPM_BUILD_ROOT%{_libexecdir}/snapd/snap-mgmt
