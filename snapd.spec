@@ -47,7 +47,6 @@ Summary:	Confinement system for snap applications
 License:	GPL v3
 Group:		Base
 BuildRequires:	%{_bindir}/rst2man
-BuildRequires:	%{_bindir}/shellcheck
 BuildRequires:	autoconf
 BuildRequires:	automake
 BuildRequires:	gcc
@@ -60,7 +59,6 @@ BuildRequires:	libcap-devel
 BuildRequires:	libseccomp-devel
 BuildRequires:	libtool
 BuildRequires:	systemd-units
-BuildRequires:	udev-devel
 BuildRequires:	udev-devel
 BuildRequires:	valgrind
 BuildRequires:	xfsprogs-devel
@@ -272,7 +270,6 @@ fi
 
 %files
 %defattr(644,root,root,755)
-%doc COPYING
 %doc README.md docs/*
 %attr(755,root,root) %{_bindir}/snap
 %attr(755,root,root) %{_bindir}/snapctl
@@ -308,7 +305,6 @@ fi
 %files -n snap-confine
 %defattr(644,root,root,755)
 %doc cmd/snap-confine/PORTING
-%doc COPYING
 %dir %{_libexecdir}/snapd
 # For now, we can't use caps
 # FIXME: Switch to "%%attr(0755,root,root) %%caps(cap_sys_admin=pe)" asap!
