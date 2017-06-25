@@ -6,7 +6,7 @@
 Summary:	A transactional software package manager
 Name:		snapd
 Version:	2.26.1
-Release:	0.1
+Release:	0.2
 License:	GPL v3
 Group:		Base
 Source0:	https://github.com/snapcore/snapd/releases/download/%{version}/%{name}_%{version}.vendor.tar.xz
@@ -19,7 +19,7 @@ URL:		https://github.com/snapcore/snapd
 Patch0001:	0001-cmd-use-libtool-for-the-internal-library.patch
 Patch0100:	%{name}-2.26.1-interfaces-seccomp-allow-bind-for-Fedora.patch
 BuildRequires:	golang
-BuildRequires:	systemd
+BuildRequires:	systemd-devel
 BuildRequires:	tar >= 1:1.22
 BuildRequires:	xz
 Requires:	snap-confine = %{version}-%{release}
@@ -69,14 +69,18 @@ started snap applications.
 Summary:	SELinux module for snapd
 License:	GPL v2+
 Group:		Base
+%if %{with selinux}
 BuildRequires:	selinux-policy
 BuildRequires:	selinux-policy-devel
-BuildArch:	noarch
+%endif
 Requires(post):	selinux-policy-base >= %{_selinux_policy_version}
 Requires(post):	policycoreutils
 Requires(post):	policycoreutils-python-utils
 Requires(pre):	libselinux-utils
 Requires(post):	libselinux-utils
+%if "%{_rpmversion}" >= "5"
+BuildArch:	noarch
+%endif
 
 %description selinux
 This package provides the SELinux policy module to ensure snapd runs
@@ -272,10 +276,10 @@ fi
 %attr(755,root,root) %{_bindir}/snap
 %attr(755,root,root) %{_bindir}/snapctl
 %dir %{_libexecdir}/snapd
-%{_libexecdir}/snapd/snapd
-%{_libexecdir}/snapd/snap-exec
-%{_libexecdir}/snapd/info
-%{_libexecdir}/snapd/snap-mgmt
+%attr(755,root,root) %{_libexecdir}/snapd/snapd
+%attr(755,root,root) %{_libexecdir}/snapd/snap-exec
+%attr(755,root,root) %{_libexecdir}/snapd/info
+%attr(755,root,root) %{_libexecdir}/snapd/snap-mgmt
 %{_mandir}/man1/snap.1*
 /etc/profile.d/snapd.sh
 %{systemdunitdir}/snapd.socket
@@ -306,12 +310,12 @@ fi
 # For now, we can't use caps
 # FIXME: Switch to "%%attr(0755,root,root) %%caps(cap_sys_admin=pe)" asap!
 %attr(4755,root,root) %{_libexecdir}/snapd/snap-confine
-%{_libexecdir}/snapd/snap-discard-ns
-%{_libexecdir}/snapd/snap-update-ns
-%{_libexecdir}/snapd/system-shutdown
+%attr(755,root,root) %{_libexecdir}/snapd/snap-discard-ns
+%attr(755,root,root) %{_libexecdir}/snapd/snap-update-ns
+%attr(755,root,root) %{_libexecdir}/snapd/system-shutdown
 %{_mandir}/man5/snap-confine.5*
 %{_mandir}/man5/snap-discard-ns.5*
-/lib/udev/snappy-app-dev
+%attr(755,root,root) /lib/udev/snappy-app-dev
 %{_udevrulesdir}/80-snappy-assign.rules
 %attr(0000,root,root) %{_sharedstatedir}/snapd/void
 
