@@ -19,6 +19,7 @@ URL:		https://github.com/snapcore/snapd
 Patch0001:	0001-cmd-use-libtool-for-the-internal-library.patch
 Patch0100:	%{name}-2.26.1-interfaces-seccomp-allow-bind-for-Fedora.patch
 BuildRequires:	golang
+BuildRequires:	pkgconfig
 BuildRequires:	systemd-devel
 BuildRequires:	tar >= 1:1.22
 BuildRequires:	xz
