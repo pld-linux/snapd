@@ -29,6 +29,8 @@ Requires:	bash-completion
 ExclusiveArch:	%{ix86} %{x8664} %{arm} aarch64 ppc64le s390x
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
+%define		_udevrulesdir /lib/udev/rules.d
+
 %define		_enable_debug_packages 0
 %define		gobuild(o:) go build -ldflags "${LDFLAGS:-} -B 0x$(head -c20 /dev/urandom|od -An -tx1|tr -d ' \\n')" -a -v -x %{?**};
 %define		gopath		%{_libdir}/golang
@@ -316,7 +318,7 @@ fi
 %{_libexecdir}/snapd/system-shutdown
 %{_mandir}/man5/snap-confine.5*
 %{_mandir}/man5/snap-discard-ns.5*
-%{_prefix}/lib/udev/snappy-app-dev
+/lib/udev/snappy-app-dev
 %{_udevrulesdir}/80-snappy-assign.rules
 %attr(0000,root,root) %{_sharedstatedir}/snapd/void
 
