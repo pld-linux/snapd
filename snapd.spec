@@ -5,46 +5,18 @@
 
 Summary:	A transactional software package manager
 Name:		snapd
-Version:	2.26.1
-Release:	0.2
+Version:	2.36.1
+Release:	1
 License:	GPL v3
 Group:		Base
 Source0:	https://github.com/snapcore/snapd/releases/download/%{version}/%{name}_%{version}.vendor.tar.xz
-# Source0-md5:	8152560d2af809ad84185d3b341b2f13
+# Source0-md5:	df9439daee9cbdd9b12da3bee198c34a
 # Script to implement certain package management actions
 Source1:	snap-mgmt.sh
 Source2:	profile.d.sh
 Source3:	%{name}.sysconfig
+Patch0:		pld_is_like_fedora.patch
 URL:		https://github.com/snapcore/snapd
-Patch0001:	0001-cmd-use-libtool-for-the-internal-library.patch
-Patch0100:	%{name}-2.26.1-interfaces-seccomp-allow-bind-for-Fedora.patch
-BuildRequires:	golang
-BuildRequires:	pkgconfig
-BuildRequires:	systemd-devel
-BuildRequires:	tar >= 1:1.22
-BuildRequires:	xz
-Requires:	snap-confine = %{version}-%{release}
-Requires:	squashfs
-ExclusiveArch:	%{ix86} %{x8664} %{arm} aarch64 ppc64le s390x
-BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
-
-%define		_udevrulesdir /lib/udev/rules.d
-
-%define		_enable_debug_packages 0
-%define		gobuild(o:) go build -ldflags "${LDFLAGS:-} -B 0x$(head -c20 /dev/urandom|od -An -tx1|tr -d ' \\n')" -a -v -x %{?**};
-%define		gopath		%{_libdir}/golang
-%define		import_path	github.com/snapcore/snapd
-
-%define		snappy_svcs	snapd.service snapd.socket snapd.autoimport.service snapd.refresh.timer snapd.refresh.service
-
-%description
-Snappy is a modern, cross-distribution, transactional package manager
-designed for working with self-contained, immutable packages.
-
-%package -n snap-confine
-Summary:	Confinement system for snap applications
-License:	GPL v3
-Group:		Base
 BuildRequires:	%{_bindir}/rst2man
 BuildRequires:	autoconf
 BuildRequires:	automake
@@ -53,18 +25,37 @@ BuildRequires:	gettext
 BuildRequires:	glib2-devel
 BuildRequires:	glibc-static
 BuildRequires:	gnupg
+BuildRequires:	golang
 BuildRequires:	indent
 BuildRequires:	libcap-devel
-BuildRequires:	libseccomp-devel
+BuildRequires:	libseccomp-static
 BuildRequires:	libtool
+BuildRequires:	pkgconfig
+BuildRequires:	systemd-devel
 BuildRequires:	systemd-units
+BuildRequires:	tar >= 1:1.22
 BuildRequires:	udev-devel
 BuildRequires:	valgrind
 BuildRequires:	xfsprogs-devel
+BuildRequires:	xz
+Requires:	pld-release
+Requires:	squashfs
+Obsoletes:	snap-confine
+ExclusiveArch:	%{ix86} %{x8664} %{arm} aarch64 ppc64le s390x
+BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
-%description -n snap-confine
-This package is used internally by snapd to apply confinement to the
-started snap applications.
+%define		_udevrulesdir /lib/udev/rules.d
+
+%define		_enable_debug_packages 0
+%define		gobuild(o:) go build -ldflags "-extldflags '${LDFLAGS:-}' -B 0x$(head -c20 /dev/urandom|od -An -tx1|tr -d ' \\n')" -a -v -x %{?**};
+%define		gopath		%{_libdir}/golang
+%define		import_path	github.com/snapcore/snapd
+
+%define		snappy_svcs	snapd.service snapd.socket snapd.apparmor.service snapd.core-fixup.service snapd.failure.service snapd.seeded.service snapd.autoimport.service snapd.snap-repair.timer
+
+%description
+Snappy is a modern, cross-distribution, transactional package manager
+designed for working with self-contained, immutable packages.
 
 %package selinux
 Summary:	SELinux module for snapd
@@ -101,8 +92,7 @@ bash-completion for %{name}.
 
 %prep
 %setup -q
-%patch1 -p1
-%patch100 -p1
+%patch0 -p1
 
 # Generate version files
 ./mkversion.sh "%{version}-%{release}"
@@ -114,11 +104,20 @@ ln -s ../../../ src/github.com/snapcore/snapd
 %build
 export GOPATH=$(pwd):$(pwd)/Godeps/_workspace:%{gopath}
 
+LDFLAGS="%{rpmldflags}"
 %gobuild -o bin/snap %{import_path}/cmd/snap
-%gobuild -o bin/snap-exec %{import_path}/cmd/snap-exec
 %gobuild -o bin/snapctl %{import_path}/cmd/snapctl
 %gobuild -o bin/snapd %{import_path}/cmd/snapd
+%gobuild -o bin/snap-failure %{import_path}/cmd/snap-failure
+
+# these should be statically linked, for some reason
+LDFLAGS="%{rpmldflags} -static"
 %gobuild -o bin/snap-update-ns %{import_path}/cmd/snap-update-ns
+%gobuild -o bin/snap-exec %{import_path}/cmd/snap-exec
+%gobuild -o bin/snap-seccomp %{import_path}/cmd/snap-seccomp
+
+# back to normal
+LDFLAGS="%{rpmldflags}"
 
 %if %{with selinux}
 cd data/selinux
@@ -137,7 +136,9 @@ autoreconf --force --install --verbose
 	--with-snap-mount-dir=%{_sharedstatedir}/snapd/snap \
 	--without-merged-usr
 
-%{__make}
+%{__make} \
+	BINDIR="%{_bindir}" \
+	LIBEXECDIR="%{_libexecdir}"
 cd -
 
 # Build systemd units
@@ -176,6 +177,7 @@ install -d -p $RPM_BUILD_ROOT%{_sharedstatedir}/snapd/seccomp/profiles
 install -d -p $RPM_BUILD_ROOT%{_sharedstatedir}/snapd/snaps
 install -d -p $RPM_BUILD_ROOT%{_sharedstatedir}/snapd/snap/bin
 install -d -p $RPM_BUILD_ROOT%{_localstatedir}/snap
+install -d -p $RPM_BUILD_ROOT%{_prefix}/lib
 
 # Install snap and snapd
 install -p bin/snap $RPM_BUILD_ROOT%{_bindir}
@@ -183,6 +185,8 @@ install -p bin/snap-exec $RPM_BUILD_ROOT%{_libexecdir}/snapd
 install -p bin/snapctl $RPM_BUILD_ROOT%{_bindir}/snapctl
 install -p bin/snapd $RPM_BUILD_ROOT%{_libexecdir}/snapd
 install -p bin/snap-update-ns $RPM_BUILD_ROOT%{_libexecdir}/snapd
+install -p bin/snap-seccomp $RPM_BUILD_ROOT%{_libexecdir}/snapd
+install -p bin/snap-failure $RPM_BUILD_ROOT%{_libexecdir}/snapd
 
 %if %{with selinux}
 install -d -p $RPM_BUILD_ROOT%{_datadir}/selinux/devel/include/contrib
@@ -203,6 +207,7 @@ install -D data/completion/snap $RPM_BUILD_ROOT%{bash_compdir}/snap
 # Install snap-confine
 cd cmd
 %{__make} install \
+	LIBEXECDIR="%{_libexecdir}" \
 	DESTDIR=$RPM_BUILD_ROOT
 # Undo the 0000 permissions, they are restored in the files section
 chmod 0755 $RPM_BUILD_ROOT%{_sharedstatedir}/snapd/void
@@ -215,6 +220,7 @@ cd -
 # Install all systemd units
 cd data/systemd
 %{__make} install \
+	LIBEXECDIR="%{_libexecdir}" \
 	DESTDIR=$RPM_BUILD_ROOT SYSTEMDSYSTEMUNITDIR="%{systemdunitdir}"
 # Remove snappy core specific units
 rm -fv $RPM_BUILD_ROOT%{systemdunitdir}/snapd.system-shutdown.service
@@ -229,6 +235,9 @@ install -pm 0755 %{SOURCE1} $RPM_BUILD_ROOT%{_libexecdir}/snapd/snap-mgmt
 # Create state.json file to be ghosted
 touch $RPM_BUILD_ROOT%{_sharedstatedir}/snapd/state.json
 
+# some things are still looked for in the wrong dir
+ln -s "%{_libexecdir}/snapd" "$RPM_BUILD_ROOT%{_prefix}/lib/snapd"
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -242,8 +251,8 @@ if [ $1 -eq 1 ] ; then
 	if systemctl -q is-enabled snapd.socket > /dev/null 2>&1 ; then
 		systemctl start snapd.socket > /dev/null 2>&1 || :
 	fi
-	if systemctl -q is-enabled snapd.refresh.timer > /dev/null 2>&1 ; then
-		systemctl start snapd.refresh.timer > /dev/null 2>&1 || :
+	if systemctl -q is-enabled snapd.snap-repair.timer > /dev/null 2>&1 ; then
+		systemctl start snapd.snap-repair.timer > /dev/null 2>&1 || :
 	fi
 fi
 
@@ -256,7 +265,7 @@ if [ $1 -eq 0 ]; then
 fi
 
 %postun
-%systemd_postun_with_restart %{snappy_svcs}
+%systemd_reload
 
 %pre selinux
 %selinux_relabel_pre
@@ -276,18 +285,34 @@ fi
 %doc README.md docs/*
 %attr(755,root,root) %{_bindir}/snap
 %attr(755,root,root) %{_bindir}/snapctl
+%{_prefix}/lib/snapd
 %dir %{_libexecdir}/snapd
-%attr(755,root,root) %{_libexecdir}/snapd/snapd
-%attr(755,root,root) %{_libexecdir}/snapd/snap-exec
 %attr(755,root,root) %{_libexecdir}/snapd/info
+%attr(6755,root,root) %{_libexecdir}/snapd/snap-confine
+%attr(755,root,root) %{_libexecdir}/snapd/snapd
+%attr(755,root,root) %{_libexecdir}/snapd/snapd.core-fixup.sh
+%attr(755,root,root) %{_libexecdir}/snapd/snap-device-helper
+%attr(755,root,root) %{_libexecdir}/snapd/snap-discard-ns
+%attr(755,root,root) %{_libexecdir}/snapd/snapd.run-from-snap
+%attr(755,root,root) %{_libexecdir}/snapd/snap-exec
+%attr(755,root,root) %{_libexecdir}/snapd/snap-failure
+%attr(755,root,root) %{_libexecdir}/snapd/snap-gdb-shim
 %attr(755,root,root) %{_libexecdir}/snapd/snap-mgmt
+%attr(755,root,root) %{_libexecdir}/snapd/snap-seccomp
+%attr(755,root,root) %{_libexecdir}/snapd/snap-update-ns
+%attr(755,root,root) %{_libexecdir}/snapd/system-shutdown
 %{_mandir}/man1/snap.1*
 /etc/profile.d/snapd.sh
+%{systemdunitdir}-generators/snapd-generator
+%{systemdunitdir}/snapd.apparmor.service
+%{systemdunitdir}/snapd.core-fixup.service
+%{systemdunitdir}/snapd.failure.service
+%{systemdunitdir}/snapd.seeded.service
+%{systemdunitdir}/snapd.snap-repair.service
+%{systemdunitdir}/snapd.snap-repair.timer
 %{systemdunitdir}/snapd.socket
 %{systemdunitdir}/snapd.service
 %{systemdunitdir}/snapd.autoimport.service
-%{systemdunitdir}/snapd.refresh.service
-%{systemdunitdir}/snapd.refresh.timer
 %config(noreplace) %verify(not md5 mtime size) /etc/sysconfig/snapd
 %dir %{_sharedstatedir}/snapd
 %dir %{_sharedstatedir}/snapd/assertions
@@ -303,21 +328,9 @@ fi
 %ghost %dir %{_sharedstatedir}/snapd/snap/bin
 %dir %{_localstatedir}/snap
 %ghost %{_sharedstatedir}/snapd/state.json
-
-%files -n snap-confine
-%defattr(644,root,root,755)
-%doc cmd/snap-confine/PORTING
-%dir %{_libexecdir}/snapd
-# For now, we can't use caps
-# FIXME: Switch to "%%attr(0755,root,root) %%caps(cap_sys_admin=pe)" asap!
-%attr(4755,root,root) %{_libexecdir}/snapd/snap-confine
-%attr(755,root,root) %{_libexecdir}/snapd/snap-discard-ns
-%attr(755,root,root) %{_libexecdir}/snapd/snap-update-ns
-%attr(755,root,root) %{_libexecdir}/snapd/system-shutdown
-%{_mandir}/man5/snap-confine.5*
-%{_mandir}/man5/snap-discard-ns.5*
-%attr(755,root,root) /lib/udev/snappy-app-dev
-%{_udevrulesdir}/80-snappy-assign.rules
+%{_mandir}/man8/snapd-env-generator.8*
+%{_mandir}/man8/snap-confine.8*
+%{_mandir}/man8/snap-discard-ns.8*
 %attr(0000,root,root) %{_sharedstatedir}/snapd/void
 
 %if %{with selinux}

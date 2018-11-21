@@ -1,0 +1,14 @@
+diff -dur snapd-2.36.1.orig/release/release.go snapd-2.36.1/release/release.go
+--- snapd-2.36.1.orig/release/release.go	2018-11-09 14:42:28.000000000 +0100
++++ snapd-2.36.1/release/release.go	2018-11-21 08:29:11.000000000 +0100
+@@ -104,7 +104,9 @@
+ 			osRelease.VersionID = v
+ 		}
+ 	}
+-
++	if (osRelease.ID == "pld") {
++		osRelease.IDLike = append(osRelease.IDLike, "fedora");
++	}
+ 	return osRelease
+ }
+ 
