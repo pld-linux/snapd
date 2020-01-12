@@ -5,12 +5,12 @@
 
 Summary:	A transactional software package manager
 Name:		snapd
-Version:	2.36.1
+Version:	2.42.5
 Release:	1
 License:	GPL v3
 Group:		Base
 Source0:	https://github.com/snapcore/snapd/releases/download/%{version}/%{name}_%{version}.vendor.tar.xz
-# Source0-md5:	df9439daee9cbdd9b12da3bee198c34a
+# Source0-md5:	9c6a50f07b33587519f2d1e0656c5f6f
 # Script to implement certain package management actions
 Source1:	snap-mgmt.sh
 Source2:	profile.d.sh
@@ -303,7 +303,8 @@ fi
 %attr(755,root,root) %{_libexecdir}/snapd/system-shutdown
 %{_mandir}/man1/snap.1*
 /etc/profile.d/snapd.sh
-%{systemdunitdir}-generators/snapd-generator
+%attr(755,root,root) /usr/lib/systemd/system-environment-generators/snapd-env-generator
+%attr(755,root,root) %{systemdunitdir}-generators/snapd-generator
 %{systemdunitdir}/snapd.apparmor.service
 %{systemdunitdir}/snapd.core-fixup.service
 %{systemdunitdir}/snapd.failure.service
