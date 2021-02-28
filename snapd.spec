@@ -70,9 +70,7 @@ Requires(post):	policycoreutils
 Requires(post):	policycoreutils-python-utils
 Requires(pre):	libselinux-utils
 Requires(post):	libselinux-utils
-%if "%{_rpmversion}" >= "5"
 BuildArch:	noarch
-%endif
 
 %description selinux
 This package provides the SELinux policy module to ensure snapd runs
@@ -83,9 +81,7 @@ Summary:	bash-completion for %{name}
 Group:		Applications/Shells
 Requires:	%{name} = %{version}-%{release}
 Requires:	bash-completion
-%if "%{_rpmversion}" >= "5"
 BuildArch:	noarch
-%endif
 
 %description -n bash-completion-%{name}
 bash-completion for %{name}.
