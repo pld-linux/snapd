@@ -315,6 +315,7 @@ fi
 %attr(755,root,root) %{_libexecdir}/snapd/snap-exec
 %attr(755,root,root) %{_libexecdir}/snapd/snap-failure
 %attr(755,root,root) %{_libexecdir}/snapd/snap-gdb-shim
+%attr(755,root,root) %{_libexecdir}/snapd/snap-gdbserver-shim
 %attr(755,root,root) %{_libexecdir}/snapd/snap-mgmt
 %attr(755,root,root) %{_libexecdir}/snapd/snap-seccomp
 %attr(755,root,root) %{_libexecdir}/snapd/snap-update-ns
