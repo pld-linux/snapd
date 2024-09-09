@@ -7,13 +7,13 @@
 Summary:	A transactional software package manager
 Summary(pl.UTF-8):	Transakcyjny zarządca pakietów oprogramowania
 Name:		snapd
-Version:	2.56.2
-Release:	1
+Version:	2.65.1
+Release:	0.1
 License:	GPL v3
 Group:		Base
 #Source0Download: https://github.com/snapcore/snapd/releases
 Source0:	https://github.com/snapcore/snapd/releases/download/%{version}/%{name}_%{version}.vendor.tar.xz
-# Source0-md5:	5952bd537b14f74aa2c33ecba84e9d9a
+# Source0-md5:	7eb5aae10f38175a32d88840c21f8273
 # Script to implement certain package management actions
 Source1:	snap-mgmt.sh
 Source2:	profile.d.sh
@@ -77,7 +77,8 @@ Summary:	SELinux module for snapd
 Summary(pl.UTF-8):	Moduł SELinuksa dla snapd
 License:	GPL v2+
 Group:		Base
-Requires(post):	selinux-policy-base >= %{_selinux_policy_version}
+#fix me
+#Requires(post):	selinux-policy-base >= %{_selinux_policy_version}
 Requires(post):	policycoreutils
 Requires(post):	policycoreutils-python-utils
 Requires(pre,post):	libselinux-utils
@@ -234,8 +235,6 @@ install -Dp data/completion/zsh/_snap $RPM_BUILD_ROOT%{zsh_compdir}/_snap
 chmod 0755 $RPM_BUILD_ROOT%{_sharedstatedir}/snapd/void
 # We don't use AppArmor
 #%{__rm} -r $RPM_BUILD_ROOT%{_sysconfdir}/apparmor.d
-# ubuntu-core-launcher is dead
-%{__rm} -v $RPM_BUILD_ROOT%{_bindir}/ubuntu-core-launcher
 
 # Install all systemd units
 %{__make} -C data/systemd install \
@@ -337,6 +336,8 @@ fi
 %{systemdunitdir}/snapd.snap-repair.service
 %{systemdunitdir}/snapd.snap-repair.timer
 %{systemdunitdir}/snapd.socket
+%{systemdunitdir}/snapd.mounts-pre.target
+%{systemdunitdir}/snapd.mounts.target
 %config(noreplace) %verify(not md5 mtime size) /etc/sysconfig/snapd
 %dir %{_sharedstatedir}/snapd
 %dir %{_sharedstatedir}/snapd/assertions
