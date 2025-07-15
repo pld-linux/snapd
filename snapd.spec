@@ -122,7 +122,7 @@ Uzupełnianie poleceń w zsh dla %{name}.
 
 %prep
 %setup -q
-%patch0 -p1
+%patch -P0 -p1
 
 # Generate version files
 ./mkversion.sh "%{version}-%{release}"
